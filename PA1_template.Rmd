@@ -1,9 +1,13 @@
 ---
 title: "Reproducible Research Peer Assessment 1"
 author: "Annie Flippo"
-date: "July 13, 2014"
-output: html_document
+output:
+  html_document:
+    keep_md: yes
 ---
+
+## Introduction
+This is prepared for the peer-assessed assignment 1 for the Coursera's Reproducible Research course.
 
 ## Loading and preprocessing the data
 
@@ -18,7 +22,8 @@ if (!file.exists("./activity.csv")) {
 
 # Read the data file 
 rawData <- read.csv("activity.csv", header=TRUE, sep=",", na.strings="NA", 
-                    colClasses=c("numeric", "character", "numeric") )
+                    colClasses=c("numeric", "character", "numeric"),
+                    col.names=c("steps", "date", "interval"))
 ```
 
 2. Process/transform the data into a format suitable for analysis
@@ -45,25 +50,19 @@ barplot(stepsPerDay$totalSteps, main="Total Steps per Day", xlab="Date", ylab="S
 
 2. Calculate and report mean and median steps per day
 
-Mean steps per day is:
-``` {r}
-dateFactor <- factor(tidyData$date)
-meanStepsPerDay <- tapply(tidyData$steps, dateFactor, mean, na.rm=TRUE)
-meanStepsPerDay <- as.data.frame(meanStepsPerDay)
-colnames(meanStepsPerDay) <- c("meanStepsPerDay")
-meanStepsPerDay
+Mean steps per day is: 
+```{r}
+mean(stepsPerDay$totalSteps)
 ```
 
 Median steps per day is:
 ```{r}
-medianStepsPerDay <- tapply(tidyData$steps, dateFactor, median, na.rm=TRUE)
-medianStepsPerDay <- as.data.frame(medianStepsPerDay)
-medianStepsPerDay
+median(stepsPerDay$totalSteps)
 ```
 
 ## What is the average daily activity pattern?
 
-1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+1. Make a time series plot.
 
 ```{r}
 # Make it a data frame and set the column names
@@ -81,24 +80,26 @@ plot(meanStepsPerInt$interval, meanStepsPerInt$steps, type="l", lwd=1,
      main="Average Daily Activity", 
      xlab="Interval", ylab="Average Steps (per 5 minute interval)")
 ```
+
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
-Calculate mean steps per interval:
 ```{r}
 # Order the previously calculated meanStepsPerInt in descending order
 sIndex <- order(meanStepsPerInt$steps, decreasing=TRUE)
 ```
 
-On average across all the days in the dataset, Interval **`r meanStepsPerInt[sIndex[1],]$interval`** contains the maximum number of steps.
+On average across all the days in the dataset, Interval 
+```{r}
+meanStepsPerInt[sIndex[1],]$interval
+``` 
+contains the maximum number of steps.
 
 ## Imputing missing values
 
 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs).
 ```{r}
-missData <- subset(rawData, is.na(rawData$steps))
-missData$date <- as.Date(missData$date)
+nrow(subset(rawData, is.na(rawData$steps)))
 ```
-There are **`r nrow(missData)`** rows with missing values, coded as NAs. 
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
@@ -136,22 +137,15 @@ barplot(fillStepsPerDay$totalSteps, main="Total Steps per Day with Missing Value
 
 Calculate mean steps per day with missing data filled in:
 ```{r}
-fmeanStepsPerDay <- tapply(fillData$steps, dateFactor, mean)
-fmeanStepsPerDay <- as.data.frame(fmeanStepsPerDay)
-colnames(fmeanStepsPerDay) <- c("steps")
-
-fmeanStepsPerDay
+mean(fillStepsPerDay$totalSteps)
 ```
 
 Calculate median steps per day for missing data filled in:
 ```{r}
-fmedianStepsPerDay <- tapply(fillData$steps, dateFactor, median)
-fmedianStepsPerDay <- as.data.frame(fmedianStepsPerDay)
-
-fmedianStepsPerDay
+median(fillStepsPerDay$totalSteps)
 ```
 
-For most days, the imputted missing value did not have a big impact on the total daily steps, mean or median steps per day.  However, for days such as 2012-10-01 that had all missing values, the replacement of missing values had a big impact.  For example, the **total daily steps** for 2012-10-01 changed from **NA** to **`r formatC(fillStepsPerDay[1,]$totalSteps, format="d", big.mark=',')`** steps.  The mean and median for 2012-10-01 changed from **NA** to **`r fmeanStepsPerDay[1,1]`** and **`r fmedianStepsPerDay[1,1]`** steps respectively.
+For most days, the imputted missing value did not have a big impact on the total daily steps, mean or median steps per day.  However, for days such as 2012-10-01 that had all missing values, the replacement of missing values had a big impact for that particular day.  For example, the **total daily steps** for 2012-10-01 changed from **NA** to **`r formatC(fillStepsPerDay[1,]$totalSteps, format="d", big.mark=',')`** steps.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
@@ -201,8 +195,10 @@ wkend_avg <- summarise(by_wkend_interval,
 # Combined average of steps per interval with a new factor column, dayOfWeek
 t_wkday <- cbind(wkday_avg, "weekday")
 colnames(t_wkday) <- c("interval", "steps", "dayOfWeek")
+
 t_wkend <- cbind(wkend_avg, "weekend")
 colnames(t_wkend) <- c("interval", "steps", "dayOfWeek")
+
 finalRes <- rbind(t_wkday, t_wkend)
 
 day_of_week <- transform(finalRes, dayOfWeek = factor(dayOfWeek))
